@@ -1,0 +1,57 @@
+.gridContainer {
+  display: flex;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 4px;
+  max-width: 800px;
+  width: 100%;
+}
+
+.square {
+  aspect-ratio: 1;
+  border: 1px solid #ccc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.square:hover {
+  transform: scale(1.05);
+}
+
+.available {
+  background-color: #f0f0f0;
+}
+
+.available:hover {
+  background-color: #e0e0e0;
+}
+
+.taken {
+  background-color: #d4edda;
+  cursor: not-allowed;
+}
+
+.squareContent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.coordinates {
+  font-size: 0.8rem;
+  color: #666;
+}
+
+.owner {
+  font-size: 0.7rem;
+  color: #28a745;
+} 

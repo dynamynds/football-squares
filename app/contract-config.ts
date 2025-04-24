@@ -1,0 +1,2 @@
+export const CONTRACT_ADDRESS = '0x6b5D8EB66a40d27Bf3F26a9bB906D2EaaB464078';
+export const ENTRY_PRICE = '0.01'; // 0.01 ETH 
