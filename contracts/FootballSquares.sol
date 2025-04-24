@@ -39,7 +39,7 @@ contract FootballSquares {
     }
 
     function startGame() external onlyOwner {
-        require(!gameStarted, "Already started");
+        require(!gameStarted, "Game already in progress");
         gameStarted = true;
         emit GameStarted();
     }
@@ -74,6 +74,50 @@ contract FootballSquares {
         payable(winner).transfer(prize);
 
         emit GameEnded(_homeScore, _awayScore, winner, prize);
+    }
+
+    function resetGame() external onlyOwner {
+        require(gameEnded, "Game not ended");
+        
+        // Reset game state
+        gameStarted = false;
+        gameEnded = false;
+        homeScoreLastDigit = 0;
+        awayScoreLastDigit = 0;
+        
+        // Clear all squares
+        for (uint8 i = 0; i < 100; i++) {
+            squares[i] = Square(address(0), 0, 0);
+        }
+        
+        // Clear player squares mapping
+        for (uint8 i = 0; i < 100; i++) {
+            address player = squares[i].player;
+            if (player != address(0)) {
+                delete playerSquares[player];
+            }
+        }
+    }
+
+    function forceReset() external onlyOwner {
+        // First, clear all player squares mappings
+        for (uint8 i = 0; i < 100; i++) {
+            address player = squares[i].player;
+            if (player != address(0)) {
+                delete playerSquares[player];
+            }
+        }
+        
+        // Then reset game state variables
+        gameStarted = false;
+        gameEnded = false;
+        homeScoreLastDigit = 0;
+        awayScoreLastDigit = 0;
+        
+        // Finally, clear all squares
+        for (uint8 i = 0; i < 100; i++) {
+            squares[i] = Square(address(0), 0, 0);
+        }
     }
 
     function getMySquares(address player) external view returns (uint8[] memory) {

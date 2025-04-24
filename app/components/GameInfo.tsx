@@ -14,8 +14,6 @@ interface Square {
 export const GameInfo = () => {
   const { address, isConnected } = useAccount();
   const [mounted, setMounted] = useState(false);
-  const [startGameTxHash, setStartGameTxHash] = useState<string | null>(null);
-  const [endGameTxHash, setEndGameTxHash] = useState<string | null>(null);
   const [homeScore, setHomeScore] = useState<string>('');
   const [awayScore, setAwayScore] = useState<string>('');
 
@@ -25,17 +23,23 @@ export const GameInfo = () => {
     functionName: "entryPrice",
   }) as { data: bigint | undefined };
 
-  const { data: gameStarted } = useContractRead({
-    address: CONTRACT_ADDRESS,
+  const { data: gameStarted, isLoading: isLoadingGameStarted } = useContractRead({
+    address: CONTRACT_ADDRESS as `0x${string}`,
     abi: CONTRACT_ABI,
     functionName: "gameStarted",
-  }) as { data: boolean | undefined };
+    onSuccess: (data) => {
+      console.log('Game started state:', data);
+    }
+  }) as { data: boolean | undefined; isLoading: boolean };
 
-  const { data: gameEnded } = useContractRead({
-    address: CONTRACT_ADDRESS,
+  const { data: gameEnded, isLoading: isLoadingGameEnded } = useContractRead({
+    address: CONTRACT_ADDRESS as `0x${string}`,
     abi: CONTRACT_ABI,
     functionName: "gameEnded",
-  }) as { data: boolean | undefined };
+    onSuccess: (data) => {
+      console.log('Game ended state:', data);
+    }
+  }) as { data: boolean | undefined; isLoading: boolean };
 
   const { data: owner } = useContractRead({
     address: CONTRACT_ADDRESS,
@@ -43,7 +47,7 @@ export const GameInfo = () => {
     functionName: "owner",
   }) as { data: string | undefined };
 
-  const { data: squaresData } = useContractRead({
+  const { data: squares } = useContractRead({
     address: CONTRACT_ADDRESS,
     abi: CONTRACT_ABI,
     functionName: "squares",
@@ -61,79 +65,16 @@ export const GameInfo = () => {
     functionName: 'awayScoreLastDigit',
   });
 
-  const { data: prizePool } = useContractRead({
-    address: CONTRACT_ADDRESS,
-    abi: CONTRACT_ABI,
-    functionName: 'getTotalSquares',
-  }) as { data: bigint | undefined };
-
-  const totalSquaresSold = squaresData?.filter(square => square.player !== '0x0000000000000000000000000000000000000000').length || 0;
+  const totalSquaresSold = squares?.filter(square => square.player !== '0x0000000000000000000000000000000000000000').length || 0;
   const currentPrizePool = BigInt(totalSquaresSold) * (entryPrice || BigInt(0));
 
   const winningSquareIndex = gameEnded && homeScoreLastDigit !== undefined && awayScoreLastDigit !== undefined
     ? Number(homeScoreLastDigit) * 10 + Number(awayScoreLastDigit)
     : null;
 
-  const winningSquare = winningSquareIndex !== null && squaresData
-    ? squaresData[winningSquareIndex]
+  const winningSquare = winningSquareIndex !== null && squares
+    ? squares[winningSquareIndex]
     : null;
-
-  const { write: startGame, isLoading: isStartingGame } = useContractWrite({
-    address: CONTRACT_ADDRESS,
-    abi: CONTRACT_ABI,
-    functionName: "startGame",
-    onSuccess: (data) => {
-      console.log('Start game transaction sent:', data);
-      setStartGameTxHash(data.hash);
-    },
-    onError: (error) => {
-      console.error('Error starting game:', error);
-      alert('Error starting game. Please try again.');
-    }
-  });
-
-  const { write: endGame, isLoading: isEndingGame } = useContractWrite({
-    address: CONTRACT_ADDRESS,
-    abi: CONTRACT_ABI,
-    functionName: "endGame",
-    args: [Number(homeScore), Number(awayScore)],
-    onSuccess: (data) => {
-      console.log('End game transaction sent:', data);
-      setEndGameTxHash(data.hash);
-    },
-    onError: (error) => {
-      console.error('Error ending game:', error);
-      alert('Error ending game. Please try again.');
-    }
-  });
-
-  const { isLoading: isStartingGameTx } = useWaitForTransaction({
-    hash: startGameTxHash as `0x${string}`,
-    onSuccess: (data) => {
-      console.log('Start game transaction confirmed:', data);
-      setStartGameTxHash(null);
-    },
-    onError: (error) => {
-      console.error('Start game transaction failed:', error);
-      setStartGameTxHash(null);
-      alert('Failed to start game. Please try again.');
-    }
-  });
-
-  const { isLoading: isEndingGameTx } = useWaitForTransaction({
-    hash: endGameTxHash as `0x${string}`,
-    onSuccess: (data) => {
-      console.log('End game transaction confirmed:', data);
-      setEndGameTxHash(null);
-      setHomeScore('');
-      setAwayScore('');
-    },
-    onError: (error) => {
-      console.error('End game transaction failed:', error);
-      setEndGameTxHash(null);
-      alert('Failed to end game. Please try again.');
-    }
-  });
 
   useEffect(() => {
     setMounted(true);
@@ -150,7 +91,6 @@ export const GameInfo = () => {
     );
   }
 
-  const isAdmin = owner?.toLowerCase() === address?.toLowerCase();
   const gameStatus = gameStarted ? (gameEnded ? "Ended" : "Active") : "Not Started";
 
   return (
@@ -164,10 +104,22 @@ export const GameInfo = () => {
             gameStarted ? 'text-green-500' :
             'text-yellow-500'
           }`}>
-            {gameEnded ? 'Ended' : gameStarted ? 'In Progress' : 'Not Started'}
+            {isLoadingGameStarted || isLoadingGameEnded ? 'Loading...' : 
+             gameEnded ? 'Ended' : 
+             gameStarted ? 'In Progress' : 
+             'Not Started'}
           </span>
         </div>
         
+        {/* Debug info - only show in development */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="text-sm text-gray-500">
+            <p>Debug Info:</p>
+            <p>gameStarted: {String(gameStarted)}</p>
+            <p>gameEnded: {String(gameEnded)}</p>
+          </div>
+        )}
+
         <div className="flex justify-between">
           <span className="text-gray-600">Squares Sold:</span>
           <span className="font-semibold">{totalSquaresSold}/100</span>
@@ -201,56 +153,6 @@ export const GameInfo = () => {
           <p className="text-gray-600">
             Your Address: {address?.slice(0, 6)}...{address?.slice(-4)}
           </p>
-        )}
-        {isAdmin && (
-          <div className="mt-4 space-y-2">
-            <h3 className="font-semibold text-gray-700">Admin Controls</h3>
-            {!gameStarted && (
-              <button
-                className="w-full py-2 px-4 bg-green-500 hover:bg-green-600 text-white rounded disabled:bg-gray-300 disabled:cursor-not-allowed"
-                onClick={() => startGame?.()}
-                disabled={isStartingGame || isStartingGameTx}
-              >
-                {isStartingGame || isStartingGameTx ? "Starting Game..." : "Start Game"}
-              </button>
-            )}
-            {gameStarted && !gameEnded && (
-              <div className="space-y-2">
-                <div className="flex space-x-2">
-                  <input
-                    type="number"
-                    placeholder="Home Score"
-                    value={homeScore}
-                    onChange={(e) => setHomeScore(e.target.value)}
-                    className="flex-1 p-2 border rounded"
-                  />
-                  <input
-                    type="number"
-                    placeholder="Away Score"
-                    value={awayScore}
-                    onChange={(e) => setAwayScore(e.target.value)}
-                    className="flex-1 p-2 border rounded"
-                  />
-                </div>
-                <button
-                  className="w-full py-2 px-4 bg-red-500 hover:bg-red-600 text-white rounded disabled:bg-gray-300 disabled:cursor-not-allowed"
-                  onClick={() => endGame?.()}
-                  disabled={isEndingGame || isEndingGameTx || !homeScore || !awayScore}
-                >
-                  {isEndingGame || isEndingGameTx ? "Ending Game..." : "End Game"}
-                </button>
-              </div>
-            )}
-            {gameEnded && (
-              <button
-                className="w-full py-2 px-4 bg-green-500 hover:bg-green-600 text-white rounded disabled:bg-gray-300 disabled:cursor-not-allowed"
-                onClick={() => startGame?.()}
-                disabled={isStartingGame || isStartingGameTx}
-              >
-                {isStartingGame || isStartingGameTx ? "Starting Game..." : "Start New Game"}
-              </button>
-            )}
-          </div>
         )}
       </div>
     </div>

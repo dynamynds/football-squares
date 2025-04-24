@@ -114,10 +114,34 @@ export const GameBoard = () => {
     address: CONTRACT_ADDRESS,
     abi: CONTRACT_ABI,
     functionName: 'squares',
-    args: [0], // Start with index 0
+    args: [BigInt(0)], // Start with index 0
     watch: true,
     cacheTime: 0, // Disable caching to ensure fresh data
-  }) as { data: [string, number, number] | undefined, refetch: () => void };
+    enabled: true, // Always enable this read
+  }) as { data: [string, number, number] | undefined, refetch: () => Promise<{ data: [string, number, number] | undefined }> };
+
+  // Get all squares
+  const [allSquares, setAllSquares] = useState<Record<number, [string, number, number]>>({});
+
+  // Update all squares when data changes
+  useEffect(() => {
+    const fetchAllSquares = async () => {
+      const squares: Record<number, [string, number, number]> = {};
+      for (let i = 0; i < 100; i++) {
+        try {
+          const result = await refetchSquares();
+          if (result.data) {
+            squares[i] = result.data;
+          }
+        } catch (error) {
+          console.error(`Error fetching square ${i}:`, error);
+        }
+      }
+      setAllSquares(squares);
+    };
+
+    fetchAllSquares();
+  }, [refetchSquares]);
 
   // Get user's squares only when address is available
   const { data: userSquares, refetch: refetchUserSquares } = useContractRead({
