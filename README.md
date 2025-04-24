@@ -38,29 +38,28 @@ cd football-squares
 npm install
 ```
 
-3. Create a `.env` file in the root directory:
-```env
-NEXT_PUBLIC_CONTRACT_ADDRESS=your_contract_address
-```
-
-## Development
-
-1. Start the local Hardhat network:
+3. Start the local Hardhat network:
 ```bash
 npx hardhat node
 ```
 
-2. In a new terminal, deploy the contract:
+4. In a new terminal, deploy the contract and get the contract address:
 ```bash
 npx hardhat run scripts/deploy.ts --network localhost
 ```
+The contract address will be displayed in the terminal after deployment.
 
-3. Start the development server:
+5. Create a `.env` file in the root directory and add the contract address:
+```env
+NEXT_PUBLIC_CONTRACT_ADDRESS=0x... # Replace with the address from step 4
+```
+
+6. Start the development server:
 ```bash
 npm run dev
 ```
 
-4. Open [http://localhost:3000](http://localhost:3000) in your browser.
+7. Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ## Testing
 
