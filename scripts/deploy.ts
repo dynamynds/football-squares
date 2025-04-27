@@ -17,7 +17,7 @@ async function main() {
   }
 
   // Deploy the contract
-  const entryPrice = ethers.parseEther("0.1"); // 0.1 ETH per square
+  const entryPrice = ethers.parseEther("0.01"); // 0.01 ETH per square
   const FootballSquares = await ethers.getContractFactory("FootballSquares");
   const game = await FootballSquares.deploy(entryPrice);
   await game.waitForDeployment();

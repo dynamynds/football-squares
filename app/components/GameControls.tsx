@@ -1,6 +1,6 @@
 "use client";
 
-import { useAccount, useContractRead, useContractWrite } from "wagmi";
+import { useAccount, useContractRead, useContractWrite, useNetwork, useWaitForTransaction } from "wagmi";
 import { CONTRACT_ADDRESS, CONTRACT_ABI } from '../constants';
 import { useState, useEffect } from "react";
 
@@ -10,6 +10,9 @@ export const GameControls = () => {
   const [awayScore, setAwayScore] = useState<string>("");
   const [winningSquareIndex, setWinningSquareIndex] = useState<bigint>(0n);
   const [error, setError] = useState<string | null>(null);
+  const [startGameTxHash, setStartGameTxHash] = useState<string | null>(null);
+  const [endGameTxHash, setEndGameTxHash] = useState<string | null>(null);
+  const [forceResetTxHash, setForceResetTxHash] = useState<string | null>(null);
 
   const { data: owner } = useContractRead({
     address: CONTRACT_ADDRESS as `0x${string}`,
@@ -57,23 +60,55 @@ export const GameControls = () => {
     enabled: winningSquareIndex !== 0n,
   });
 
+  const { chain } = useNetwork();
+  const isCorrectChain = chain?.id === 11155111; // Ethereum Sepolia chain ID
+
   const { writeAsync: startGame, isLoading: isStartingGame } = useContractWrite({
-    address: CONTRACT_ADDRESS as `0x${string}`,
+    address: CONTRACT_ADDRESS,
     abi: CONTRACT_ABI,
-    functionName: 'startGame',
+    functionName: "startGame",
+    onSuccess: (data) => {
+      setStartGameTxHash(data.hash);
+    }
   });
 
   const { writeAsync: endGame, isLoading: isEndingGame } = useContractWrite({
-    address: CONTRACT_ADDRESS as `0x${string}`,
+    address: CONTRACT_ADDRESS,
     abi: CONTRACT_ABI,
-    functionName: 'endGame',
-    args: [parseInt(homeScore), parseInt(awayScore)],
+    functionName: "endGame",
+    onSuccess: (data) => {
+      setEndGameTxHash(data.hash);
+    }
   });
 
-  const { writeAsync: forceReset, isLoading: isResetting } = useContractWrite({
-    address: CONTRACT_ADDRESS as `0x${string}`,
+  const { writeAsync: forceReset, isLoading: isForceResetting } = useContractWrite({
+    address: CONTRACT_ADDRESS,
     abi: CONTRACT_ABI,
-    functionName: 'forceReset',
+    functionName: "forceReset",
+    onSuccess: (data) => {
+      setForceResetTxHash(data.hash);
+    }
+  });
+
+  const { isLoading: waitForStartGame } = useWaitForTransaction({
+    hash: startGameTxHash as `0x${string}`,
+    onSuccess: () => {
+      setStartGameTxHash(null);
+    }
+  });
+
+  const { isLoading: waitForEndGame } = useWaitForTransaction({
+    hash: endGameTxHash as `0x${string}`,
+    onSuccess: () => {
+      setEndGameTxHash(null);
+    }
+  });
+
+  const { isLoading: waitForForceReset } = useWaitForTransaction({
+    hash: forceResetTxHash as `0x${string}`,
+    onSuccess: () => {
+      setForceResetTxHash(null);
+    }
   });
 
   useEffect(() => {
@@ -98,46 +133,86 @@ export const GameControls = () => {
   }, [winningSquareOwner]);
 
   const handleStartGame = async () => {
+    if (!isConnected) {
+      alert("Please connect your wallet first");
+      return;
+    }
+
+    if (!isCorrectChain) {
+      alert("Please switch to Sepolia network");
+      return;
+    }
+
+    if (!homeScore || !awayScore) {
+      alert("Please enter both scores");
+      return;
+    }
+
+    const homeScoreNum = parseInt(homeScore);
+    const awayScoreNum = parseInt(awayScore);
+
+    if (isNaN(homeScoreNum) || isNaN(awayScoreNum)) {
+      alert("Please enter valid scores");
+      return;
+    }
+
     try {
-      setError(null);
-      
-      // If game is in progress, try to end it first
-      if (gameStarted && !gameEnded) {
-        try {
-          await endGame();
-          // Wait for the game to end
-          await new Promise(resolve => setTimeout(resolve, 5000));
-        } catch (error) {
-          console.error("Error ending game:", error);
-          setError("Failed to end current game. Please try again.");
-          return;
-        }
+      if (gameEnded) {
+        await forceReset?.();
+        await waitForForceReset;
       }
 
-      // If game is started, try to force reset it
-      if (gameStarted) {
-        try {
-          await forceReset();
-          // Wait for reset to complete
-          await new Promise(resolve => setTimeout(resolve, 5000));
-        } catch (error) {
-          console.error("Error force resetting game:", error);
-          setError("Failed to reset game state. Please try again.");
-          return;
-        }
-      }
-
-      // Start the new game
-      try {
-        await startGame();
-      } catch (error) {
-        console.error("Error starting game:", error);
-        setError("Failed to start new game. Please try again.");
-        return;
-      }
+      await startGame?.({
+        args: [homeScoreNum, awayScoreNum] as [number, number]
+      });
+      await waitForStartGame;
     } catch (error) {
-      console.error("Error in game flow:", error);
-      setError("An unexpected error occurred. Please try again.");
+      console.error("Error starting game:", error);
+      alert("Error starting game. Please try again.");
+    }
+  };
+
+  const handleEndGame = async () => {
+    if (!isConnected) {
+      alert("Please connect your wallet first");
+      return;
+    }
+
+    if (!isCorrectChain) {
+      alert("Please switch to Sepolia network");
+      return;
+    }
+
+    if (!homeScore || !awayScore) {
+      alert("Please enter both scores");
+      return;
+    }
+
+    const homeScoreNum = parseInt(homeScore);
+    const awayScoreNum = parseInt(awayScore);
+
+    if (isNaN(homeScoreNum) || isNaN(awayScoreNum)) {
+      alert("Please enter valid scores");
+      return;
+    }
+
+    // Calculate winning square
+    const winningRow = homeScoreNum % 10;
+    const winningCol = awayScoreNum % 10;
+    const winningIndex = winningRow * 10 + winningCol;
+
+    try {
+      await endGame?.({
+        args: [homeScoreNum, awayScoreNum] as [number, number]
+      });
+      await waitForEndGame;
+    } catch (error) {
+      console.error("Error ending game:", error);
+      if (error instanceof Error && error.message.includes("No winner")) {
+        setError(`Cannot end game: The winning square (Row ${winningRow}, Column ${winningCol}) has not been purchased yet.`);
+      } else {
+        setError("Error ending game. Please try again.");
+      }
     }
   };
 
@@ -165,27 +240,86 @@ export const GameControls = () => {
     <div className="card">
       <h3>Admin Controls</h3>
       {error && (
-        <div className="text-red-500 mb-4">
+        <div className="text-red-500 mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
           {error}
         </div>
       )}
       {(!gameStarted || gameEnded) && (
-        <button 
-          onClick={handleStartGame}
-          className="button"
-          disabled={isStartingGame || isResetting}
-        >
-          {isStartingGame || isResetting ? "Processing..." : "Start New Game"}
-        </button>
+        <div className="space-y-4">
+          <div className="flex space-x-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Home Score</label>
+              <input
+                type="number"
+                value={homeScore}
+                onChange={(e) => setHomeScore(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                placeholder="Enter home score"
+                min="0"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Away Score</label>
+              <input
+                type="number"
+                value={awayScore}
+                onChange={(e) => setAwayScore(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                placeholder="Enter away score"
+                min="0"
+              />
+            </div>
+          </div>
+          <button 
+            onClick={handleStartGame}
+            className="button"
+            disabled={isStartingGame || isForceResetting}
+          >
+            {isStartingGame || isForceResetting ? "Processing..." : "Start New Game"}
+          </button>
+        </div>
       )}
       {gameStarted && !gameEnded && (
-        <button 
-          onClick={() => endGame()}
-          className="button"
-          disabled={isEndingGame}
-        >
-          {isEndingGame ? "Ending Game..." : "End Game"}
-        </button>
+        <div className="space-y-4">
+          <div className="flex space-x-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Home Score</label>
+              <input
+                type="number"
+                value={homeScore}
+                onChange={(e) => setHomeScore(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                placeholder="Enter home score"
+                min="0"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Away Score</label>
+              <input
+                type="number"
+                value={awayScore}
+                onChange={(e) => setAwayScore(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                placeholder="Enter away score"
+                min="0"
+              />
+            </div>
+          </div>
+          {homeScore && awayScore && (
+            <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-blue-700">
+                Winning square will be: Row {parseInt(homeScore) % 10}, Column {parseInt(awayScore) % 10}
+              </p>
+            </div>
+          )}
+          <button 
+            onClick={handleEndGame}
+            className="button"
+            disabled={isEndingGame}
+          >
+            {isEndingGame ? "Ending Game..." : "End Game"}
+          </button>
+        </div>
       )}
     </div>
   );

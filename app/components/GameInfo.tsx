@@ -47,12 +47,6 @@ export const GameInfo = () => {
     functionName: "owner",
   }) as { data: string | undefined };
 
-  const { data: squares } = useContractRead({
-    address: CONTRACT_ADDRESS,
-    abi: CONTRACT_ABI,
-    functionName: "squares",
-  }) as { data: Square[] | undefined };
-
   const { data: homeScoreLastDigit } = useContractRead({
     address: CONTRACT_ADDRESS,
     abi: CONTRACT_ABI,
@@ -65,15 +59,45 @@ export const GameInfo = () => {
     functionName: 'awayScoreLastDigit',
   });
 
-  const totalSquaresSold = squares?.filter(square => square.player !== '0x0000000000000000000000000000000000000000').length || 0;
+  // Get all squares using a loop
+  const squaresData: [string, number, number][] = [];
+  const squareRefetchers: (() => void)[] = [];
+
+  for (let i = 0; i < 100; i++) {
+    const { data: square, refetch: refetchSquare } = useContractRead({
+      address: CONTRACT_ADDRESS,
+      abi: CONTRACT_ABI,
+      functionName: "squares",
+      args: [BigInt(i)],
+      watch: true,
+      cacheTime: 0,
+    }) as { data: [string, number, number] | undefined, refetch: () => void };
+
+    if (square) {
+      squaresData.push(square);
+    }
+    squareRefetchers.push(refetchSquare);
+  }
+
+  // Periodically refetch all squares data
+  useEffect(() => {
+    const interval = setInterval(() => {
+      squareRefetchers.forEach(refetch => refetch());
+    }, 5000); // Refetch every 5 seconds
+
+    return () => clearInterval(interval);
+  }, [squareRefetchers]);
+
+  // Calculate total squares sold from squaresData
+  const totalSquaresSold = squaresData.filter(square => square[0] !== '0x0000000000000000000000000000000000000000').length;
   const currentPrizePool = BigInt(totalSquaresSold) * (entryPrice || BigInt(0));
 
   const winningSquareIndex = gameEnded && homeScoreLastDigit !== undefined && awayScoreLastDigit !== undefined
     ? Number(homeScoreLastDigit) * 10 + Number(awayScoreLastDigit)
     : null;
 
-  const winningSquare = winningSquareIndex !== null && squares
-    ? squares[winningSquareIndex]
+  const winningSquare = winningSquareIndex !== null && squaresData[winningSquareIndex]
+    ? squaresData[winningSquareIndex]
     : null;
 
   useEffect(() => {
@@ -139,7 +163,7 @@ export const GameInfo = () => {
             <div className="flex justify-between">
               <span className="text-gray-600">Winner:</span>
               <span className="font-semibold">
-                {winningSquare.player === address ? 'You!' : winningSquare.player}
+                {winningSquare[0] === address ? 'You!' : winningSquare[0]}
               </span>
             </div>
             <div className="flex justify-between">

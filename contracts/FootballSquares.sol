@@ -67,6 +67,23 @@ contract FootballSquares {
         // Calculate winning square
         uint8 winningIndex = homeScoreLastDigit * 10 + awayScoreLastDigit;
         address winner = squares[winningIndex].player;
+
+        // If winning square is empty, find next occupied square to the right
+        if (winner == address(0)) {
+            uint8 row = winningIndex / 10;
+            uint8 col = winningIndex % 10;
+            
+            // Search for next occupied square in the same row
+            for (uint8 i = 1; i < 10; i++) {
+                uint8 nextCol = (col + i) % 10;
+                uint8 nextIndex = row * 10 + nextCol;
+                if (squares[nextIndex].player != address(0)) {
+                    winner = squares[nextIndex].player;
+                    break;
+                }
+            }
+        }
+
         require(winner != address(0), "No winner");
 
         gameEnded = true;
