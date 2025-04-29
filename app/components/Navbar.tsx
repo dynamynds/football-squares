@@ -4,12 +4,14 @@ import { ConnectButton } from './ConnectButton';
 
 export default function Navbar() {
   return (
-    <nav className="bg-white shadow-lg sticky top-0 z-50">
-      <div className="container mx-auto px-4">
-        <div className="flex justify-between items-center h-20">
-          <div className="flex items-center space-x-2">
-            <h1 className="text-2xl font-bold text-gradient">Football Squares</h1>
-            <span className="text-sm text-secondary bg-gray-100 px-2 py-1 rounded-full">
+    <nav className="w-full bg-white shadow-sm">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center h-16">
+          <div className="flex items-center">
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">
+              Football Squares
+            </h1>
+            <span className="ml-4 px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-600">
               Web3 Game
             </span>
           </div>

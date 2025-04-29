@@ -3,8 +3,9 @@
 import { useState, useEffect } from "react";
 import { useAccount, useNetwork, useContractRead, useContractWrite, useWaitForTransaction, useBalance } from "wagmi";
 import { parseEther, formatEther } from "viem";
-import { CONTRACT_ADDRESS, CONTRACT_ABI } from '@/app/constants';
+import { CONTRACT_ADDRESS, CONTRACT_ABI, TEAM_NAMES } from '@/app/constants';
 import { ENTRY_PRICE } from '@/app/contract-config';
+import React from "react";
 
 interface SquareProps {
   row: number;
@@ -25,7 +26,7 @@ const Square = ({ row, col, isSelected, onSelect, owner, isWinningSquare }: Squa
       style={{
         width: '60px',
         height: '60px',
-        border: '2px solid #4a5568',
+        border: '1px solid rgba(0, 0, 0, 0.1)',
         borderRadius: '8px',
         display: 'flex',
         flexDirection: 'column',
@@ -33,19 +34,23 @@ const Square = ({ row, col, isSelected, onSelect, owner, isWinningSquare }: Squa
         justifyContent: 'center',
         cursor: owner ? 'default' : 'pointer',
         backgroundColor: isSelected 
-          ? 'rgba(99, 102, 241, 0.3)' 
+          ? 'rgba(99, 102, 241, 0.1)' 
           : isOwned 
-            ? 'rgba(16, 185, 129, 0.3)' 
+            ? 'rgba(16, 185, 129, 0.1)' 
             : owner 
-              ? 'rgba(156, 163, 175, 0.2)' 
-              : 'rgba(17, 24, 39, 0.7)',
+              ? 'rgba(156, 163, 175, 0.05)' 
+              : 'rgba(255, 255, 255, 0.8)',
         position: 'relative',
         opacity: owner ? 0.8 : 1,
         transition: 'all 0.2s ease-in-out',
-        boxShadow: isSelected ? '0 0 10px rgba(99, 102, 241, 0.5)' : isHovered ? '0 0 15px rgba(99, 102, 241, 0.3)' : 'none',
+        boxShadow: isSelected 
+          ? '0 0 0 2px rgba(99, 102, 241, 0.3)' 
+          : isHovered 
+            ? '0 0 0 2px rgba(99, 102, 241, 0.2)' 
+            : '0 1px 3px rgba(0, 0, 0, 0.1)',
         backdropFilter: 'blur(4px)',
-        borderColor: isWinningSquare ? '#10B981' : '#4a5568',
-        borderWidth: isWinningSquare ? '3px' : '2px',
+        borderColor: isWinningSquare ? '#10B981' : 'rgba(0, 0, 0, 0.1)',
+        borderWidth: isWinningSquare ? '2px' : '1px',
         transform: isSelected || isHovered ? 'scale(1.05)' : 'scale(1)',
       }}
       onClick={owner ? undefined : onSelect}
@@ -55,21 +60,21 @@ const Square = ({ row, col, isSelected, onSelect, owner, isWinningSquare }: Squa
       {owner ? (
         <div style={{
           fontSize: '12px',
-          color: isOwned ? '#10B981' : '#ffffff',
+          color: isOwned ? '#10B981' : '#374151',
           fontWeight: '500',
           textAlign: 'center',
           padding: '0 4px',
-          wordBreak: 'break-all'
+          wordBreak: 'break-all',
         }}>
           {isOwned ? 'You' : `${owner.slice(0, 4)}...${owner.slice(-4)}`}
         </div>
       ) : (
         <div style={{
           fontSize: '14px',
-          color: '#ffffff',
-          fontWeight: '600'
+          color: '#374151',
+          fontWeight: '600',
         }}>
-          {row}-{col}
+          ?
         </div>
       )}
     </div>
@@ -395,6 +400,23 @@ export const GameBoard = () => {
     console.log('Squares data:', squaresData);
   }, [squaresData]);
 
+  // Add contract reads for team names
+  const { data: homeTeam, error: homeTeamError } = useContractRead({
+    address: CONTRACT_ADDRESS,
+    abi: CONTRACT_ABI,
+    functionName: 'getHomeTeam',
+  });
+
+  const { data: awayTeam, error: awayTeamError } = useContractRead({
+    address: CONTRACT_ADDRESS,
+    abi: CONTRACT_ABI,
+    functionName: 'getAwayTeam',
+  });
+
+  // Use default team names if contract calls fail
+  const homeTeamName = homeTeamError ? 'Home Team' : (homeTeam || 'Home Team');
+  const awayTeamName = awayTeamError ? 'Away Team' : (awayTeam || 'Away Team');
+
   if (!mounted) {
     return (
       <div style={{ padding: '16px', backgroundColor: 'white', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
@@ -409,11 +431,8 @@ export const GameBoard = () => {
   return (
     <div style={{
       padding: '2rem',
-      background: 'linear-gradient(135deg, #111827 0%, #1f2937 100%)',
+      background: 'linear-gradient(135deg, #f3f4f6 0%, #ffffff 100%)',
       borderRadius: '16px',
-      boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)',
-      border: '1px solid rgba(255, 255, 255, 0.1)',
-      backdropFilter: 'blur(8px)',
       maxWidth: '800px',
       margin: '0 auto'
     }}>
@@ -423,9 +442,8 @@ export const GameBoard = () => {
         gridTemplateRows: 'auto auto repeat(10, 1fr)',
         gap: '4px',
         padding: '1rem',
-        background: 'rgba(17, 24, 39, 0.7)',
-        borderRadius: '12px',
-        border: '1px solid rgba(255, 255, 255, 0.1)'
+        background: 'rgba(255, 255, 255, 0.8)',
+        borderRadius: '12px'
       }}>
         {/* Top-left empty cell */}
         <div style={{
@@ -434,9 +452,8 @@ export const GameBoard = () => {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: 'rgba(17, 24, 39, 0.9)',
-          borderRadius: '8px',
-          border: '2px solid #4a5568',
+          backgroundColor: 'rgba(255, 255, 255, 0.9)',
+          borderRadius: '8px'
         }} />
 
         {/* Home team title */}
@@ -446,15 +463,14 @@ export const GameBoard = () => {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: 'rgba(17, 24, 39, 0.9)',
+          backgroundColor: 'rgba(255, 255, 255, 0.9)',
           borderRadius: '8px',
-          border: '2px solid #4a5568',
-          color: '#ffffff',
+          color: '#374151',
           fontWeight: '600',
           fontSize: '16px',
           marginBottom: '4px'
         }}>
-          <span>Home Team Score</span>
+          <span>{homeTeamName}</span>
         </div>
 
         {/* Home team numbers */}
@@ -466,9 +482,8 @@ export const GameBoard = () => {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            backgroundColor: 'rgba(17, 24, 39, 0.9)',
-            border: '2px solid #4a5568',
-            color: '#ffffff',
+            backgroundColor: 'rgba(255, 255, 255, 0.9)',
+            color: '#374151',
             fontWeight: '600',
             fontSize: '16px'
           }}>
@@ -484,9 +499,8 @@ export const GameBoard = () => {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: 'rgba(17, 24, 39, 0.9)',
-          border: '2px solid #4a5568',
-          color: '#ffffff',
+          backgroundColor: 'rgba(255, 255, 255, 0.9)',
+          color: '#374151',
           fontWeight: '600',
           fontSize: '16px',
           writingMode: 'vertical-rl',
@@ -494,12 +508,12 @@ export const GameBoard = () => {
           transform: 'rotate(180deg)',
           padding: '8px 0'
         }}>
-          <span>Away Team Score</span>
+          <span>{awayTeamName}</span>
         </div>
 
         {/* Squares grid */}
         {[...Array(10)].map((_, row) => (
-          <>
+          <React.Fragment key={`row-${row}`}>
             {/* Away team number */}
             <div key={`away-${row}`} style={{
               gridColumn: 2,
@@ -508,9 +522,8 @@ export const GameBoard = () => {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              backgroundColor: 'rgba(17, 24, 39, 0.9)',
-              border: '2px solid #4a5568',
-              color: '#ffffff',
+              backgroundColor: 'rgba(255, 255, 255, 0.9)',
+              color: '#374151',
               fontWeight: '600',
               fontSize: '16px'
             }}>
@@ -541,13 +554,14 @@ export const GameBoard = () => {
 
               return (
                 <div
-                  key={`${row}-${col}`}
+                  key={`square-${row}-${col}`}
                   style={{
                     gridColumn: col + 3,
                     gridRow: row + 3
                   }}
                 >
                   <Square
+                    key={`square-component-${row}-${col}`}
                     row={row}
                     col={col}
                     isSelected={isSelected}
@@ -558,7 +572,7 @@ export const GameBoard = () => {
                 </div>
               );
             })}
-          </>
+          </React.Fragment>
         ))}
       </div>
 
@@ -566,10 +580,10 @@ export const GameBoard = () => {
         <div style={{
           marginTop: '1.5rem',
           padding: '1.5rem',
-          backgroundColor: 'rgba(17, 24, 39, 0.7)',
+          backgroundColor: 'rgba(255, 255, 255, 0.8)',
           borderRadius: '8px',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
-          color: '#ffffff'
+          border: '1px solid rgba(0, 0, 0, 0.1)',
+          color: '#374151'
         }}>
           <div style={{
             display: 'flex',

@@ -1,4 +1,5 @@
 import { CONTRACT_ADDRESS } from './contract-config';
+import { TEAM_NAMES } from './contract-config';
 
 export { CONTRACT_ADDRESS };
 export const CONTRACT_ABI = [
@@ -239,5 +240,51 @@ export const CONTRACT_ABI = [
     ],
     "stateMutability": "view",
     "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getHomeTeam",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getAwayTeam",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "_homeTeam",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "_awayTeam",
+        "type": "string"
+      }
+    ],
+    "name": "setTeamNames",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
   }
-] as const; 
+] as const;
+
+export { TEAM_NAMES }; 

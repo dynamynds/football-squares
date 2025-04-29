@@ -6,6 +6,7 @@ import { useState, useEffect } from "react";
 
 export const GameControls = () => {
   const { address, isConnected } = useAccount();
+  const [mounted, setMounted] = useState(false);
   const [homeScore, setHomeScore] = useState<string>("");
   const [awayScore, setAwayScore] = useState<string>("");
   const [winningSquareIndex, setWinningSquareIndex] = useState<bigint>(0n);
@@ -110,6 +111,10 @@ export const GameControls = () => {
       setForceResetTxHash(null);
     }
   });
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (squares) {
@@ -218,22 +223,16 @@ export const GameControls = () => {
 
   const isAdmin = owner?.toLowerCase() === address?.toLowerCase();
 
+  if (!mounted) {
+    return null;
+  }
+
   if (!isConnected) {
-    return (
-      <div className="card">
-        <h3>Game Controls</h3>
-        <p>Please connect your wallet to control the game</p>
-      </div>
-    );
+    return null;
   }
 
   if (!isAdmin) {
-    return (
-      <div className="card">
-        <h3>Game Controls</h3>
-        <p>Only the admin can control the game</p>
-      </div>
-    );
+    return null;
   }
 
   return (
@@ -317,7 +316,7 @@ export const GameControls = () => {
             className="button"
             disabled={isEndingGame}
           >
-            {isEndingGame ? "Ending Game..." : "End Game"}
+            {isEndingGame ? "Processing..." : "End Game"}
           </button>
         </div>
       )}

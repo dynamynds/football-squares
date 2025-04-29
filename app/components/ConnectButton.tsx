@@ -19,7 +19,7 @@ export function ConnectButton() {
     return (
       <button
         disabled
-        className="btn-secondary opacity-50"
+        className="px-4 py-2 bg-gray-200 text-gray-600 rounded-lg font-medium cursor-not-allowed"
       >
         Loading...
       </button>
@@ -29,12 +29,12 @@ export function ConnectButton() {
   if (isConnected) {
     return (
       <div className="flex items-center space-x-4">
-        <span className="text-sm text-text-secondary">
+        <span className="text-sm text-gray-600">
           {address?.slice(0, 6)}...{address?.slice(-4)}
         </span>
         <button
           onClick={() => disconnect()}
-          className="btn-secondary"
+          className="px-4 py-2 bg-red-500 text-white rounded-lg font-medium hover:bg-red-600 transition-colors"
         >
           Disconnect
         </button>
@@ -46,7 +46,7 @@ export function ConnectButton() {
     <button
       onClick={() => connect({ connector: metaMaskConnector })}
       disabled={isLoading}
-      className="btn-primary"
+      className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
     >
       {isLoading ? 'Connecting...' : 'Connect Wallet'}
     </button>

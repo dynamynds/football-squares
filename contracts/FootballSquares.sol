@@ -19,6 +19,10 @@ contract FootballSquares {
     uint8 public homeScoreLastDigit;
     uint8 public awayScoreLastDigit;
 
+    // Add team name storage
+    string public homeTeam;
+    string public awayTeam;
+
     event SquarePurchased(address indexed player, uint8 index);
     event GameStarted();
     event GameEnded(uint8 homeScore, uint8 awayScore, address winner, uint256 prize);
@@ -139,5 +143,21 @@ contract FootballSquares {
 
     function getMySquares(address player) external view returns (uint8[] memory) {
         return playerSquares[player];
+    }
+
+    // Add team name setter function
+    function setTeamNames(string memory _homeTeam, string memory _awayTeam) public onlyOwner {
+        require(!gameStarted, "Game has already started");
+        homeTeam = _homeTeam;
+        awayTeam = _awayTeam;
+    }
+    
+    // Add team name getter functions
+    function getHomeTeam() public view returns (string memory) {
+        return homeTeam;
+    }
+    
+    function getAwayTeam() public view returns (string memory) {
+        return awayTeam;
     }
 }

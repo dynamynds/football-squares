@@ -12,23 +12,35 @@ export default function ClientWrapper() {
   const { isConnected } = useAccount();
 
   return (
-    <main className="min-h-screen bg-background-light py-8">
+    <main className="min-h-screen bg-gray-50 py-8">
       <div className="container mx-auto px-4">
         {!isConnected ? (
           <div className="text-center py-12 max-w-2xl mx-auto">
-            <h2 className="text-2xl font-bold text-gradient mb-4">
+            <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent mb-6">
               Connect Your Wallet to Play
             </h2>
-            <p className="text-text-secondary text-lg mb-8">
+            <p className="text-gray-600 text-lg mb-8">
               Join the decentralized football squares game and compete for prizes!
             </p>
-            <div className="bg-white card p-8">
-              <h3 className="text-xl font-semibold text-text-primary mb-4">How to Play</h3>
-              <ul className="text-left space-y-3 text-text-secondary">
-                <li>1. Connect your MetaMask wallet</li>
-                <li>2. Purchase squares on the game board</li>
-                <li>3. Watch the game and win if your square matches the final score</li>
-                <li>4. Claim your prize if you win!</li>
+            <div className="bg-white rounded-xl p-8 border border-gray-200 shadow-sm">
+              <h3 className="text-xl font-semibold text-gray-900 mb-6">How to Play</h3>
+              <ul className="text-left space-y-4 text-gray-600">
+                <li className="flex items-center space-x-3">
+                  <span className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold">1</span>
+                  <span>Connect your MetaMask wallet</span>
+                </li>
+                <li className="flex items-center space-x-3">
+                  <span className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold">2</span>
+                  <span>Purchase squares on the game board</span>
+                </li>
+                <li className="flex items-center space-x-3">
+                  <span className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold">3</span>
+                  <span>Watch the game and win if your square matches the final score</span>
+                </li>
+                <li className="flex items-center space-x-3">
+                  <span className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold">4</span>
+                  <span>Claim your prize if you win!</span>
+                </li>
               </ul>
             </div>
           </div>
